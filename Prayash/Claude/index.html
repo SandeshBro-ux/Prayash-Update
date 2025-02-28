@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaming Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="memory-game.css">
+</head>
+<body>
+    <div id="particles-js" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"></div>
+    <header>
+        <div class="logo">
+            <h1>GameHub</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#" class="active">Home</a></li>
+                <li><a href="#">Leaderboard</a></li>
+                <li><a href="#">Profile</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h2>Welcome to GameHub</h2>
+                <p>Play six exciting games all in one place!</p>
+                <button id="start-playing">Start Playing</button>
+            </div>
+        </section>
+
+        <section class="games-grid hidden" id="games-section">
+            <h2>Choose a Game</h2>
+            <div class="games-container">
+                <div class="game-card" data-game="tic-tac-toe">
+                    <div class="game-icon"><i class="fas fa-th"></i></div>
+                    <h3>Tic-Tac-Toe</h3>
+                    <p>Classic strategy game</p>
+                </div>
+                <div class="game-card" data-game="snake">
+                    <div class="game-icon">
+                        <span class="snake-emoji">🐍</span>
+                    </div>
+                    <h3>Snake Game</h3>
+                    <p>Eat and grow longer</p>
+                </div>
+                <div class="game-card" data-game="memory">
+                    <div class="game-icon">🧠</div>
+                    <h3>Memory Game</h3>
+                    <p>Test your memory by matching cards</p>
+                </div>
+                <div class="game-card" data-game="word-memory">
+                    <div class="game-icon"><i class="fas fa-font"></i></div>
+                    <h3>Word Memory</h3>
+                    <p>Remember the words</p>
+                </div>
+                <div class="game-card" data-game="rock-paper-scissors">
+                    <div class="game-icon"><i class="fas fa-hand-rock"></i></div>
+                    <h3>Rock Paper Scissors</h3>
+                    <p>Beat the computer</p>
+                </div>
+                <div class="game-card" data-game="catch">
+                    <div class="game-icon"><i class="fas fa-apple-alt"></i></div>
+                    <h3>Catch Objects</h3>
+                    <p>Catch falling items</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Game Containers -->
+        <section id="game-area" class="hidden">
+            <div class="game-header">
+                <h2 id="current-game-title">Game Title</h2>
+                <div class="game-controls">
+                    <span id="game-score">Score: 0</span>
+                    <button id="restart-game">Restart</button>
+                    <button id="exit-game">Exit</button>
+                </div>
+            </div>
+            
+            <!-- Tic Tac Toe Game -->
+            <div id="tic-tac-toe-container" class="game-container hidden">
+                <div class="tic-tac-toe-board">
+                    <div class="cell" data-index="0"></div>
+                    <div class="cell" data-index="1"></div>
+                    <div class="cell" data-index="2"></div>
+                    <div class="cell" data-index="3"></div>
+                    <div class="cell" data-index="4"></div>
+                    <div class="cell" data-index="5"></div>
+                    <div class="cell" data-index="6"></div>
+                    <div class="cell" data-index="7"></div>
+                    <div class="cell" data-index="8"></div>
+                </div>
+                <div class="game-status">
+                    <p id="tic-tac-toe-status">Your turn (X)</p>
+                </div>
+            </div>
+            
+            <!-- Snake Game -->
+            <div id="snake-container" class="game-container hidden">
+                <div id="snake-start-screen">
+                    <div class="snake-icon-glow"></div>
+                    <div class="snake-icon-large">
+                        <span class="snake-emoji-large">🐍</span>
+                    </div>
+                    <h3>Snake Game</h3>
+                    <p>Eat and grow longer</p>
+                    <button id="start-snake-game">Start Game</button>
+                </div>
+                
+                <canvas id="snake-canvas" width="500" height="500" class="hidden"></canvas>
+                
+                <div class="snake-controls hidden">
+                    <div class="controls-title">CONTROLS</div>
+                    <div class="arrow-keys">
+                        <div class="arrow-key up"><i class="fas fa-arrow-up"></i></div>
+                        <div class="arrow-key left"><i class="fas fa-arrow-left"></i></div>
+                        <div class="arrow-key down"><i class="fas fa-arrow-down"></i></div>
+                        <div class="arrow-key right"><i class="fas fa-arrow-right"></i></div>
+                    </div>
+                    <p class="control-instructions">Press arrow keys on your computer to move snake</p>
+                </div>
+            </div>
+            
+            <!-- Memory Game -->
+            <div id="memory-container" class="game-container hidden">
+                <div class="memory-controls">
+                    <div class="memory-stats">
+                        <div id="memory-pairs">Pairs: 0/0</div>
+                        <div id="memory-timer">Time: 0:00</div>
+                    </div>
+                    
+                    <div class="memory-difficulty-container">
+                        <div class="memory-difficulty">
+                            <button class="difficulty-btn active" data-level="easy">Easy</button>
+                            <button class="difficulty-btn" data-level="medium">Medium</button>
+                            <button class="difficulty-btn" data-level="hard">Hard</button>
+                        </div>
+                        <button id="memory-sound-toggle" class="memory-sound-btn">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="memory-board">
+                    <!-- Cards will be generated by JavaScript -->
+                </div>
+                
+                <div id="memory-message" class="memory-message"></div>
+                
+                <div class="memory-buttons">
+                    <button id="memory-new-game" class="memory-btn">New Game</button>
+                    <button id="memory-pause" class="memory-btn">Pause</button>
+                </div>
+            </div>
+            
+            <!-- Word Memory Game -->
+            <div id="word-memory-container" class="game-container hidden">
+                <div class="word-memory-area">
+                    <div id="word-display"></div>
+                    <div id="word-input-area" class="hidden">
+                        <input type="text" id="word-input" placeholder="Enter the words you remember...">
+                        <button id="word-submit">Submit</button>
+                    </div>
+                </div>
+                <div class="game-status">
+                    <p id="word-memory-status">Memorize the words!</p>
+                </div>
+            </div>
+            
+            <!-- Rock Paper Scissors Game -->
+            <div id="rock-paper-scissors-container" class="game-container hidden">
+                <div class="rps-game">
+                    <div class="rps-displays">
+                        <div class="rps-display-container">
+                            <h3>You</h3>
+                            <div id="player-choice" class="rps-display">?</div>
+                        </div>
+                        <div class="rps-display-container">
+                            <h3>Computer</h3>
+                            <div id="computer-choice" class="rps-display">?</div>
+                        </div>
+                    </div>
+                    
+                    <div id="rps-status">Choose rock, paper, or scissors</div>
+                    
+                    <div class="rps-choices">
+                        <button class="rps-choice" data-choice="rock">
+                            <i class="fas fa-hand-rock"></i>
+                        </button>
+                        <button class="rps-choice" data-choice="paper">
+                            <i class="fas fa-hand-paper"></i>
+                        </button>
+                        <button class="rps-choice" data-choice="scissors">
+                            <i class="fas fa-hand-scissors"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Catch Objects Game -->
+            <div id="catch-container" class="game-container hidden">
+                <canvas id="catch-canvas" width="400" height="500"></canvas>
+                <div class="game-status">
+                    <p>Use left/right arrows or A/D keys to move</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 GameHub - All rights reserved</p>
+    </footer>
+
+    <!-- The modal for game results -->
+    <div id="result-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="result-title">Game Over</h2>
+            <p id="result-message">Your score: 0</p>
+            <div class="modal-buttons">
+                <button id="play-again">Play Again</button>
+                <button id="back-to-menu">Back to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="snake-game.js"></script>
+    <script src="memory-game.js"></script>
+</body>
+</html> 
+

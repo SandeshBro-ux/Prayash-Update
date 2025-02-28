@@ -1,0 +1,602 @@
+/* Memory Game - Complete Rebuild */
+#memory-container {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+    background-color: rgba(65, 39, 120, 0.4);
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    color: white;
+}
+
+/* Game Header */
+.memory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.memory-title {
+    font-size: 28px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 10px rgba(156, 39, 176, 0.7);
+}
+
+.memory-score {
+    font-size: 18px;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Game Controls */
+.memory-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.memory-stats {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 5px;
+    background-color: rgba(76, 29, 149, 0.6);
+    padding: 8px 15px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    justify-content: center;
+}
+
+#memory-pairs,
+#memory-timer {
+    background: linear-gradient(135deg, #9c27b0, #673ab7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Move difficulty buttons to their own container with better styling */
+.memory-difficulty-container {
+    display: flex;
+    width: 100%;
+    max-width: 400px;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(76, 29, 149, 0.4);
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+.memory-difficulty {
+    display: flex;
+    gap: 10px;
+}
+
+/* Improved difficulty buttons */
+.difficulty-btn {
+    border: none;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: bold;
+    opacity: 0.8;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+}
+
+.difficulty-btn:hover {
+    transform: translateY(-2px);
+    opacity: 1;
+}
+
+/* Different colors for each difficulty level */
+.difficulty-btn[data-level="easy"] {
+    background-color: #4CAF50; /* Green */
+}
+
+.difficulty-btn[data-level="medium"] {
+    background-color: #FF9800; /* Orange */
+}
+
+.difficulty-btn[data-level="hard"] {
+    background-color: #F44336; /* Red */
+}
+
+.difficulty-btn.active {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    opacity: 1;
+}
+
+.difficulty-btn[data-level="easy"].active {
+    background-color: #2E7D32; /* Darker Green */
+}
+
+.difficulty-btn[data-level="medium"].active {
+    background-color: #E65100; /* Darker Orange */
+}
+
+.difficulty-btn[data-level="hard"].active {
+    background-color: #B71C1C; /* Darker Red */
+}
+
+/* Game Board */
+.memory-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    max-width: 700px;
+    margin: 0 auto 20px;
+    padding: 20px;
+    background-color: rgba(76, 29, 149, 0.3);
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    min-height: 400px; /* Ensure minimum height */
+}
+
+/* Cards */
+.memory-card {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transform: scale(1);
+    transition: transform 0.3s ease-out;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    min-height: 80px;
+    perspective: 1000px;
+    background-color: transparent;
+}
+
+.memory-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.5s;
+    transform-style: preserve-3d;
+}
+
+.card-front,
+.card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.card-front {
+    background-color: rgba(50, 30, 90, 0.8);
+    color: white;
+}
+
+/* Question mark styling */
+.question-mark {
+    font-size: 40px;
+    color: white;
+}
+
+.card-back {
+    background-color: rgba(156, 39, 176, 0.8);
+    transform: rotateY(180deg);
+    font-size: 40px;
+}
+
+/* Flipped card state */
+.memory-card.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+.memory-card.flipped:hover {
+    transform: scale(1.03);
+}
+
+/* Matched card state */
+.memory-card.matched {
+    transform: scale(0.95);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+    cursor: default;
+}
+
+.memory-card.matched .card-inner {
+    transform: rotateY(180deg);
+    transition: transform 0.8s, box-shadow 0.5s;
+}
+
+.memory-card.matched .card-back {
+    background-color: rgba(76, 175, 80, 0.7);
+    animation: match-pulse 1.5s infinite alternate;
+}
+
+@keyframes match-pulse {
+    0% {
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+    }
+}
+
+/* Card shake animation for mismatches */
+@keyframes shake {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-8px); }
+    80% { transform: translateX(8px); }
+    100% { transform: translateX(0); }
+}
+
+.memory-card .shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+/* Message */
+.memory-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px 30px;
+    border-radius: 15px;
+    background-color: rgba(76, 29, 149, 0.95);
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    z-index: 100;
+    pointer-events: none;
+    max-width: 90%;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+    border: 3px solid white;
+    letter-spacing: 0.5px;
+}
+
+.memory-message.show {
+    opacity: 1;
+}
+
+/* Make the general text animation optional - get-ready will use its own animation */
+.memory-message.show:not(.get-ready) {
+    animation: capcut-animation 1.5s ease-out;
+}
+
+/* CapCut-style text animation */
+@keyframes capcut-animation {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -80%) scale(0.5);
+        letter-spacing: 10px;
+        filter: blur(10px);
+    }
+    20% {
+        opacity: 0.8;
+        transform: translate(-50%, -60%) scale(0.8);
+        letter-spacing: 5px;
+        filter: blur(5px);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+        letter-spacing: 2px;
+        filter: blur(0);
+    }
+    70% {
+        transform: translate(-50%, -45%) scale(0.95);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        letter-spacing: 0.5px;
+    }
+}
+
+/* Remove previous pulse animation */
+@keyframes pulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+    }
+}
+
+.memory-message.success {
+    background-color: rgba(76, 175, 80, 0.95);
+}
+
+.memory-message.error {
+    background-color: rgba(244, 67, 54, 0.95);
+}
+
+/* Buttons */
+.memory-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.memory-btn {
+    background-color: #9c27b0;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.memory-btn:hover {
+    background-color: #7b1fa2;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Improved sound button */
+.memory-sound-btn {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    font-size: 18px;
+}
+
+.memory-sound-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.memory-sound-btn.muted {
+    background-color: rgba(255, 100, 100, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .memory-difficulty-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .memory-difficulty {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .memory-sound-btn {
+        margin-top: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .memory-stats {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .difficulty-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
+/* Popular CapCut-style text reveal animation - replaces the casual-attention animation */
+@keyframes capcut-text-reveal {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.2);
+        filter: blur(20px);
+    }
+    15% {
+        opacity: 0.5;
+        transform: translate(-50%, -50%) scale(1.5);
+        letter-spacing: 10px;
+        text-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+        filter: blur(5px);
+    }
+    30% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.9);
+        letter-spacing: 2px;
+        text-shadow: 0 0 15px #00eeff;
+        filter: blur(0);
+    }
+    40% {
+        transform: translate(-50%, -50%) scale(1.1);
+        text-shadow: 0 0 15px #ff00ee;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1);
+        text-shadow: 0 0 15px #ffcc00;
+    }
+    60% {
+        transform: translate(-50%, -50%) scale(1.05);
+        text-shadow: 0 0 15px #00ff88;
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(0.98);
+        text-shadow: 0 0 15px #ff3366;
+    }
+    80% {
+        transform: translate(-50%, -50%) scale(1.02);
+        text-shadow: 0 0 15px #00a2ff;
+    }
+    90% {
+        transform: translate(-50%, -50%) scale(1);
+        text-shadow: 0 0 15px #ff9900;
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        letter-spacing: 1px;
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    }
+}
+
+/* Glowing border animation for the Get Ready message */
+@keyframes border-glow {
+    0% { border-color: #ff3366; }
+    20% { border-color: #ffcc00; }
+    40% { border-color: #33ff99; }
+    60% { border-color: #3399ff; }
+    80% { border-color: #ff66cc; }
+    100% { border-color: #ff3366; }
+}
+
+/* Update the get ready message styling with popular CapCut-style animation */
+.memory-message.get-ready {
+    animation: capcut-text-reveal 1.8s ease-out, border-glow 2s linear infinite;
+    font-size: 28px;
+    line-height: 1.3;
+    text-transform: uppercase;
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 20px 30px;
+    border: 4px solid #ff3366;
+    box-shadow: 0 0 30px rgba(255, 51, 102, 0.7);
+    letter-spacing: 1px;
+    font-weight: 800;
+}
+
+/* Countdown timer that appears over the cards */
+.memory-countdown {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 70px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.35);
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0.5;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    animation: timer-pulse 1s infinite;
+}
+
+@keyframes timer-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.5;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.6;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+}
+
+/* Game start animation */
+@keyframes gameStartFlash {
+    0% {
+        background-color: rgba(65, 39, 120, 0.4);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+    50% {
+        background-color: rgba(156, 39, 176, 0.6);
+        box-shadow: 0 0 30px rgba(156, 39, 176, 0.8);
+    }
+    100% {
+        background-color: rgba(65, 39, 120, 0.4);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+}
+
+@keyframes cardStartAnimation {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Add class for game start animation */
+.game-starting {
+    animation: gameStartFlash 1s ease-out;
+}
+
+.game-starting .memory-card {
+    animation: cardStartAnimation 0.5s ease-out;
+}
+
+/* Timer animation during gameplay */
+@keyframes timerPulse {
+    0% {
+        color: rgba(255, 255, 255, 0.8);
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    50% {
+        color: rgba(255, 255, 255, 1);
+        text-shadow: 0 0 20px rgba(156, 39, 176, 0.8);
+    }
+    100% {
+        color: rgba(255, 255, 255, 0.8);
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+}
+
+#memory-timer {
+    animation: timerPulse 2s infinite;
+}
+

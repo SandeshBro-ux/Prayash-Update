@@ -1,0 +1,1678 @@
+// Initialize the platform when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    gameController.init();
+    initParticleBackground();
+});
+
+// Main game controller
+const gameController = {
+    currentGame: null,
+    score: 0,
+    
+    // Initialize the platform
+    init: function() {
+        // Event listeners for menu navigation
+        document.getElementById('start-playing').addEventListener('click', function() {
+            // Hide the hero section
+            document.querySelector('.hero').classList.add('hidden');
+            
+            // Show the games section
+            const gamesSection = document.getElementById('games-section');
+            gamesSection.classList.remove('hidden');
+            
+            // Get the heading and add animation class
+            const heading = gamesSection.querySelector('h2');
+            heading.classList.add('animate-heading');
+            
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                heading.classList.remove('animate-heading');
+            }, 3000);
+            
+            console.log('Games section should now be visible with "Choose a Game" heading');
+        });
+        
+        // Setup game cards
+        const gameCards = document.querySelectorAll('.game-card');
+        gameCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const gameType = card.getAttribute('data-game');
+                gameController.loadGame(gameType);
+            });
+        });
+        
+        // Setup exit button
+        document.getElementById('exit-game').addEventListener('click', () => {
+            gameController.exitGame();
+        });
+        
+        // Setup restart button
+        document.getElementById('restart-game').addEventListener('click', () => {
+            gameController.restartGame();
+        });
+        
+        // Setup modal buttons
+        document.getElementById('play-again').addEventListener('click', () => {
+            this.hideModal();
+            this.restartGame();
+        });
+        
+        document.getElementById('back-to-menu').addEventListener('click', () => {
+            this.hideModal();
+            this.exitGame();
+        });
+        
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            this.hideModal();
+        });
+    },
+    
+    // Load a specific game
+    loadGame: function(gameType) {
+        // Hide games grid and show game area
+        document.getElementById('games-section').classList.add('hidden');
+        const gameArea = document.getElementById('game-area');
+        gameArea.classList.remove('hidden');
+        
+        // Hide all game containers
+        document.querySelectorAll('.game-container').forEach(container => {
+            container.classList.add('hidden');
+        });
+        
+        // Update game title and reset score
+        let gameTitle = '';
+        this.score = 0;
+        this.updateScore();
+        
+        // Load specific game
+        switch(gameType) {
+            case 'tic-tac-toe':
+                gameTitle = 'Tic Tac Toe';
+                document.getElementById('tic-tac-toe-container').classList.remove('hidden');
+                if (!ticTacToe.initialized) {
+                    ticTacToe.init();
+                }
+                this.currentGame = ticTacToe;
+                break;
+            case 'snake':
+                gameTitle = 'Snake Game (reworked)';
+                document.getElementById('snake-container').classList.remove('hidden');
+                document.getElementById('current-game-title').textContent = gameTitle;
+                // Make sure score shows correctly from the beginning
+                this.score = 0;
+                this.updateScore();
+                snakeGame.init();
+                this.currentGame = snakeGame;
+                break;
+            case 'memory':
+                gameTitle = 'Memory Game';
+                document.getElementById('memory-container').classList.remove('hidden');
+                memoryGame.init();
+                this.currentGame = memoryGame;
+                break;
+            case 'word-memory':
+                gameTitle = 'Word Memory Game';
+                document.getElementById('word-memory-container').classList.remove('hidden');
+                wordMemoryGame.init();
+                this.currentGame = wordMemoryGame;
+                break;
+            case 'rock-paper-scissors':
+                gameTitle = 'Rock Paper Scissors';
+                document.getElementById('rock-paper-scissors-container').classList.remove('hidden');
+                rockPaperScissors.init();
+                this.currentGame = rockPaperScissors;
+                break;
+            case 'catch':
+                gameTitle = 'Catch Objects';
+                document.getElementById('catch-container').classList.remove('hidden');
+                catchGame.init();
+                this.currentGame = catchGame;
+                break;
+        }
+        
+        document.getElementById('current-game-title').textContent = gameTitle;
+    },
+    
+    // Exit current game
+    exitGame: function() {
+        if (this.currentGame) {
+            this.currentGame.stop();
+            this.currentGame = null;
+        }
+        
+        document.getElementById('game-area').classList.add('hidden');
+        document.getElementById('games-section').classList.remove('hidden');
+    },
+    
+    // Restart current game
+    restartGame: function() {
+        if (this.currentGame) {
+            this.currentGame.stop();
+            this.currentGame.init();
+        }
+    },
+    
+    // Update score display
+    updateScore: function(animate = false) {
+        const scoreElement = document.getElementById('game-score');
+        
+        if (animate) {
+            // Add animation class
+            scoreElement.textContent = `Score: ${this.score}`;
+            scoreElement.classList.add('score-animated');
+            
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                scoreElement.classList.remove('score-animated');
+            }, 500);
+        } else {
+            scoreElement.textContent = `Score: ${this.score}`;
+        }
+    },
+    
+    // Show result modal
+    showModal: function(title, message) {
+        document.getElementById('result-title').textContent = title;
+        document.getElementById('result-message').textContent = message;
+        document.getElementById('result-modal').classList.remove('hidden');
+    },
+    
+    // Hide result modal
+    hideModal: function() {
+        document.getElementById('result-modal').classList.add('hidden');
+    }
+};
+
+// Enhanced Tic-Tac-Toe Game
+const ticTacToe = {
+    board: ['', '', '', '', '', '', '', '', ''],
+    currentPlayer: 'X',
+    gameActive: true,
+    initialized: false,
+    winningLine: null,
+    sounds: {
+        place: null,
+        win: null,
+        draw: null,
+        computerMove: null
+    },
+
+    // Initialize the game
+    init: function() {
+        this.initialized = true;
+        this.board = ['', '', '', '', '', '', '', '', ''];
+        this.currentPlayer = 'X';
+        this.gameActive = true;
+        this.winningLine = null;
+        
+        // Initialize sounds
+        this.initSounds();
+        
+        // Clear all cells
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            cell.textContent = '';
+            cell.classList.remove('x-mark', 'o-mark', 'winning');
+            cell.onclick = (e) => this.handleCellClick(e);
+        });
+        
+        document.getElementById('tic-tac-toe-status').textContent = 'Your turn (X)';
+    },
+    
+    // Initialize sound effects
+    initSounds: function() {
+        // Define sound URLs
+        const soundUrls = {
+            place: 'https://www.soundjay.com/buttons/sounds/button-09.mp3',
+            win: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
+            draw: 'https://www.soundjay.com/misc/sounds/fail-buzzer-03.mp3',
+            computerMove: 'https://www.soundjay.com/buttons/sounds/button-10.mp3'
+        };
+        
+        // Create context only if needed
+        if (!window.audioContext) {
+            try {
+                window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("Audio context created successfully");
+            } catch(e) {
+                console.error("Web Audio API not supported:", e);
+                return;
+            }
+        }
+        
+        // Load all sounds
+        for (const [name, url] of Object.entries(soundUrls)) {
+            this.loadSound(name, url);
+        }
+        
+        // Unlock audio on first user interaction (needed for some browsers)
+        const unlockAudio = () => {
+            console.log("Attempting to unlock audio...");
+            // Create and play a silent buffer
+            const buffer = window.audioContext.createBuffer(1, 1, 22050);
+            const source = window.audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(window.audioContext.destination);
+            source.start(0);
+            
+            // Remove event listeners once audio is unlocked
+            document.removeEventListener('touchstart', unlockAudio);
+            document.removeEventListener('touchend', unlockAudio);
+            document.removeEventListener('click', unlockAudio);
+            console.log("Audio unlocked!");
+        };
+        
+        // Add unlock listeners
+        document.addEventListener('touchstart', unlockAudio, false);
+        document.addEventListener('touchend', unlockAudio, false);
+        document.addEventListener('click', unlockAudio, false);
+    },
+    
+    // Load a sound from URL
+    loadSound: function(name, url) {
+        console.log(`Loading sound: ${name} from ${url}`);
+        const request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.responseType = 'arraybuffer';
+        
+        request.onload = () => {
+            window.audioContext.decodeAudioData(request.response, (buffer) => {
+                if (!this.sounds) this.sounds = {};
+                this.sounds[name] = buffer;
+                console.log(`Sound ${name} loaded successfully`);
+            }, (error) => {
+                console.error(`Error decoding ${name}:`, error);
+            });
+        };
+        
+        request.onerror = () => {
+            console.error(`Error loading sound: ${name}`);
+        };
+        
+        request.send();
+    },
+    
+    // Play a sound effect
+    playSound: function(type) {
+        if (!window.audioContext) return;
+        
+        // Resume audio context if suspended (needed for Chrome)
+        if (window.audioContext.state === 'suspended') {
+            window.audioContext.resume();
+        }
+        
+        if (this.sounds && this.sounds[type]) {
+            console.log(`Playing sound: ${type}`);
+            const source = window.audioContext.createBufferSource();
+            source.buffer = this.sounds[type];
+            source.connect(window.audioContext.destination);
+            source.start(0);
+            return true;
+        } else {
+            console.warn(`Sound ${type} not loaded yet`);
+            return false;
+        }
+    },
+    
+    // Handle cell click
+    handleCellClick: function(e) {
+        const cell = e.target;
+        const index = cell.getAttribute('data-index');
+        
+        if (this.board[index] !== '' || !this.gameActive) {
+            return;
+        }
+        
+        // Make player move
+        this.board[index] = this.currentPlayer;
+        cell.textContent = this.currentPlayer;
+        cell.classList.add('x-mark'); // Add class for styling
+        
+        // Play placement sound
+        this.playSound('place');
+        
+        // Check for win or draw
+        if (this.checkWin()) {
+            this.gameActive = false;
+            
+            // Try to play the sound with the primary method
+            const soundPlayed = this.playSound('win');
+            
+            // If that didn't work, try the fallback
+            if (!soundPlayed) {
+                this.playFallbackSound('win');
+            }
+            
+            // Update status and add celebration effect
+            document.getElementById('tic-tac-toe-status').textContent = `You win!`;
+            document.querySelector('.game-header').classList.add('celebrating');
+            
+            gameController.score += 10;
+            gameController.updateScore();
+            
+            // Remove celebration class after animation completes
+            setTimeout(() => {
+                document.querySelector('.game-header').classList.remove('celebrating');
+            }, 1800);
+            
+            // Show win animation
+            setTimeout(() => {
+                this.highlightWinningLine();
+            }, 100);
+            
+            // Show modal after a delay
+            setTimeout(() => {
+                gameController.showModal('You Win!', 'Congratulations! You beat the computer!');
+            }, 1800);
+            return;
+        }
+        
+        if (this.checkDraw()) {
+            this.gameActive = false;
+            document.getElementById('tic-tac-toe-status').textContent = 'Game ended in a draw!';
+            
+            // Play draw sound
+            this.playSound('draw');
+            
+            // Show modal after a delay
+            setTimeout(() => {
+                gameController.showModal('Draw!', 'The game ended in a draw!');
+            }, 1000);
+            return;
+        }
+        
+        // Switch to computer's turn
+        this.currentPlayer = 'O';
+        document.getElementById('tic-tac-toe-status').textContent = 'Computer\'s turn (O)';
+        
+        // Computer makes a move after a delay
+        setTimeout(() => {
+            this.makeComputerMove();
+        }, 500);
+    },
+    
+    // Make computer move
+    makeComputerMove: function() {
+        if (!this.gameActive) return;
+        
+        // Get all empty cells
+        const emptyCells = this.board.reduce((acc, cell, index) => {
+            if (cell === '') acc.push(index);
+            return acc;
+        }, []);
+        
+        if (emptyCells.length > 0) {
+            // Choose random empty cell
+            const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            const cell = document.querySelector(`.cell[data-index="${randomIndex}"]`);
+            
+            // Make move
+            this.board[randomIndex] = this.currentPlayer;
+            cell.textContent = this.currentPlayer;
+            cell.classList.add('o-mark'); // Add class for styling
+            
+            // Play computer move sound
+            this.playSound('computerMove');
+            
+            // Check for win or draw
+            if (this.checkWin()) {
+                this.gameActive = false;
+                document.getElementById('tic-tac-toe-status').textContent = 'Computer wins!';
+                
+                // Highlight winning line
+                this.highlightWinningLine();
+                
+                // Show modal after a delay
+                setTimeout(() => {
+                    gameController.showModal('Game Over', 'Computer wins!');
+                }, 1500);
+                return;
+            }
+            
+            if (this.checkDraw()) {
+                this.gameActive = false;
+                document.getElementById('tic-tac-toe-status').textContent = 'Game ended in a draw!';
+                
+                // Play draw sound
+                this.playSound('draw');
+                
+                // Show modal after a delay
+                setTimeout(() => {
+                    gameController.showModal('Draw!', 'The game ended in a draw!');
+                }, 1000);
+                return;
+            }
+            
+            // Switch back to player
+            this.currentPlayer = 'X';
+            document.getElementById('tic-tac-toe-status').textContent = 'Your turn (X)';
+        }
+    },
+    
+    // Check for win
+    checkWin: function() {
+        const winConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
+        
+        for (let i = 0; i < winConditions.length; i++) {
+            const [a, b, c] = winConditions[i];
+            if (this.board[a] !== '' && 
+                this.board[a] === this.board[b] && 
+                this.board[b] === this.board[c]) {
+                this.winningLine = winConditions[i];
+                return true;
+            }
+        }
+        
+        return false;
+    },
+    
+    // Highlight winning line
+    highlightWinningLine: function() {
+        if (!this.winningLine) return;
+        
+        this.winningLine.forEach(index => {
+            const cell = document.querySelector(`.cell[data-index="${index}"]`);
+            cell.classList.add('winning');
+        });
+    },
+    
+    // Check for draw
+    checkDraw: function() {
+        return !this.board.includes('');
+    },
+    
+    // Stop the game
+    stop: function() {
+        this.gameActive = false;
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            cell.onclick = null;
+        });
+        this.initialized = false;
+    },
+
+    // Add this fallback function
+    playFallbackSound: function(type) {
+        const fallbackSounds = {
+            place: 'https://www.soundjay.com/buttons/sounds/button-09.mp3',
+            win: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
+            draw: 'https://www.soundjay.com/misc/sounds/fail-buzzer-03.mp3',
+            computerMove: 'https://www.soundjay.com/buttons/sounds/button-10.mp3'
+        };
+        
+        if (fallbackSounds[type]) {
+            console.log(`Playing fallback sound: ${type}`);
+            const audio = new Audio(fallbackSounds[type]);
+            audio.volume = 1.0;
+            
+            // Play with promise handling for better error detection
+            const playPromise = audio.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log(`Fallback sound ${type} played successfully`);
+                }).catch(error => {
+                    console.error(`Error playing fallback sound:`, error);
+                });
+            }
+        }
+    }
+};
+
+// Snake Game
+const snakeGame = {
+    canvas: null,
+    ctx: null,
+    snake: [],
+    food: {},
+    direction: 'right',
+    nextDirection: 'right',
+    gameInterval: null,
+    gridSize: 20,
+    speed: 150,
+    initialized: false,
+    
+    init: function() {
+        // Show start screen instead of starting the game immediately
+        document.getElementById('snake-canvas').classList.add('hidden');
+        document.getElementById('snake-start-screen').classList.remove('hidden');
+        document.querySelector('.snake-controls').classList.add('hidden');
+        
+        // Setup start button event listener
+        document.getElementById('start-snake-game').addEventListener('click', () => {
+            this.startGame();
+        });
+    },
+    
+    startGame: function() {
+        // Hide start screen
+        document.getElementById('snake-start-screen').classList.add('hidden');
+        
+        // Show controls panel first
+        document.querySelector('.snake-controls').classList.remove('hidden');
+        
+        // Hide canvas until animation completes
+        document.getElementById('snake-canvas').classList.add('hidden');
+        
+        // Get the instruction text element
+        const instructionText = document.querySelector('.control-instructions');
+        const originalText = instructionText.textContent;
+        instructionText.textContent = '';
+        
+        // Start typewriter animation on the text
+        this.typewriterAnimation(instructionText, originalText, 0, () => {
+            // After animation completes, show the canvas and start the game
+            setTimeout(() => {
+                document.getElementById('snake-canvas').classList.remove('hidden');
+                this.initializeGame();
+            }, 500); // Short pause after typing animation
+        });
+    },
+    
+    // Add typewriter animation function
+    typewriterAnimation: function(element, text, index, callback) {
+        if (index < text.length) {
+            element.textContent += text.charAt(index);
+            index++;
+            setTimeout(() => this.typewriterAnimation(element, text, index, callback), 50); // Speed of typing
+        } else {
+            // Animation completed - remove the cursor styling
+            element.classList.add('typing-done');
+            
+            // Call callback after animation is complete
+            if (callback) callback();
+        }
+    },
+    
+    initializeGame: function() {
+        // Clear previous game state
+        clearInterval(this.gameInterval);
+        
+        // Setup the canvas
+        this.canvas = document.getElementById('snake-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        
+        // Initialize game variables
+        this.cellSize = 20;
+        this.snake = [
+            {x: 10, y: 10}, // Head
+            {x: 9, y: 10},  // Body
+            {x: 8, y: 10}   // Tail
+        ];
+        
+        // Important: initialize with zero movement so player has to press a key first
+        this.direction = {x: 0, y: 0};
+        this.nextDirection = {x: 0, y: 0};
+        
+        // Generate food away from snake starting position
+        this.food = this.generateFood();
+        this.score = 0;
+        this.gameOver = false;
+        
+        console.log("Game initialized with snake at:", this.snake);
+        console.log("Initial food at:", this.food);
+        
+        // Keep bound reference to event handler for proper removal
+        this.handleKeyPress = this.handleKeyPress.bind(this);
+        document.addEventListener('keydown', this.handleKeyPress);
+        
+        // Setup touch controls
+        this.setupControls();
+        
+        // Draw initial state
+        this.draw();
+        
+        // Schedule the game loop with proper speed
+        this.gameInterval = setInterval(() => this.gameLoop(), 150);
+        
+        // Update score display
+        gameController.score = this.score;
+        gameController.updateScore();
+        
+        this.initialized = true;
+        
+        console.log("Snake game fully initialized and ready to play!");
+    },
+    
+    gameLoop: function() {
+        if (this.gameOver) return;
+        
+        // Update snake position
+        this.direction = {...this.nextDirection};
+        
+        // Only move if the snake has a direction
+        if (this.direction.x !== 0 || this.direction.y !== 0) {
+            const head = {...this.snake[0]};
+            head.x += this.direction.x;
+            head.y += this.direction.y;
+            
+            // Check for collision with walls
+            if (head.x < 0 || head.x >= this.canvas.width / this.cellSize || 
+                head.y < 0 || head.y >= this.canvas.height / this.cellSize) {
+                this.endGame();
+                return;
+            }
+            
+            // Check for collision with self (skip the tail as it will move)
+            for (let i = 0; i < this.snake.length - 1; i++) {
+                if (head.x === this.snake[i].x && head.y === this.snake[i].y) {
+                    this.endGame();
+                    return;
+                }
+            }
+            
+            // Fix food collision detection - use exact match again
+            if (head.x === this.food.x && head.y === this.food.y) {
+                // Grow snake
+                this.snake.unshift(head);
+                
+                // Food collection animation
+                this.showFoodCollectionAnimation(head.x, head.y);
+                
+                // Generate new food
+                this.food = this.generateFood();
+                
+                // Update score with animation
+                this.score++;
+                
+                // Update the global score
+                gameController.score = this.score;
+                gameController.updateScore(true);
+                
+                // Debug
+                console.log(`Snake ate food! New score: ${this.score}`);
+                
+                // Play sound if audio is available
+                if (window.Audio) {
+                    try {
+                        const eatSound = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbMAkJCQkJCQkJCQkJCQkJDIyMjIyMjIyMjIyMjIyMj///////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAUHAAAAAAAAAbPsizp4AAAAAAAAAAAAAAAAAAAAAP/jYMQAEvgiwl/PAAIAJ2CzK9WdLfSa3P7SSYztr5rl7w/tK5qPIZzuYWEgY7kxmOxMkAoBAECZACBw8PhwQBhQHAQOD8+CB4fFAcXB+CBcXP8uD/Lr5cHwfh8H/5cHwfggXB8H/y4Ph8/BMYPn6JjB//8+fPjGD5+iYwf//EYPg+D5jB8/BCc6YyIxnknOpGNPiMGn/BMZkQiETiMSiP/jgMRAIaIswl9PAAQ05jBjGDGMGMuMwcE0NVkhUajQkHjMj8KlGYwNDwsFhEVhQXBw0LiQmEAuGh0XFRQUGRgVGBITEBIJXMHLUdBkGw9HxAXFBQcEBgC7g4EigkKk8UKxocHxwJcQguDQgP/8LhIqLig4P/hAKjw3ch36ioiHxkcbz9Xn0OvmIFtfr/hKe5hYaGO5PpjGtlgs+3PdTILt1XO5kFmtvt/YLlLS0t7m7XMzS1//4qfaGVkYWtrIXsREUdEQRK3uyORh5uiCZm7//iCc0RBETf4hIjQgODh4ukyUiAiM0/EBwaM0naMTdqK9ERERERER343I9fKTut43I9HrR//kH9bx6PSPEQf/4ZUTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==');
+                        eatSound.volume = 0.5;
+                        eatSound.play().catch(e => console.log('Sound play failed:', e));
+                    } catch (e) {
+                        console.log('Sound creation failed:', e);
+                    }
+                }
+            } else {
+                // Move snake
+                this.snake.unshift(head);
+                this.snake.pop();
+            }
+        }
+        
+        this.draw();
+    },
+    
+    draw: function() {
+        // First clear the canvas with a visible background
+        this.ctx.fillStyle = '#1a1a2e'; // Dark blue background instead of white
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Add grid pattern for better visibility
+        this.ctx.strokeStyle = '#2a2a4e';
+        this.ctx.lineWidth = 0.5;
+        
+        // Draw a subtle grid
+        for (let i = 0; i <= this.canvas.width; i += this.cellSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(i, 0);
+            this.ctx.lineTo(i, this.canvas.height);
+            this.ctx.stroke();
+        }
+        
+        for (let i = 0; i <= this.canvas.height; i += this.cellSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i);
+            this.ctx.lineTo(this.canvas.width, i);
+            this.ctx.stroke();
+        }
+        
+        // Draw food with pulsing glow effect
+        const foodSize = this.cellSize * 0.8;
+        const foodX = this.food.x * this.cellSize + this.cellSize / 2;
+        const foodY = this.food.y * this.cellSize + this.cellSize / 2;
+        
+        // Add glow effect
+        const foodGlow = this.ctx.createRadialGradient(
+            foodX, foodY, foodSize * 0.2,
+            foodX, foodY, foodSize * 1.5
+        );
+        foodGlow.addColorStop(0, 'rgba(255, 0, 128, 0.8)');
+        foodGlow.addColorStop(1, 'rgba(255, 0, 128, 0)');
+        
+        this.ctx.fillStyle = foodGlow;
+        this.ctx.beginPath();
+        this.ctx.arc(foodX, foodY, foodSize * 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Actual food
+        this.ctx.fillStyle = '#ff0080'; // Bright pink food
+        this.ctx.beginPath();
+        this.ctx.arc(foodX, foodY, foodSize / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Draw snake
+        this.snake.forEach((segment, index) => {
+            const x = segment.x * this.cellSize;
+            const y = segment.y * this.cellSize;
+            
+            // Make the snake green with gradient
+            if (index === 0) {
+                // Head
+                this.ctx.fillStyle = '#00ff00'; // Bright green for head
+            } else {
+                // Body with gradient from bright to darker green
+                const greenValue = Math.max(100, 255 - (index * 8));
+                this.ctx.fillStyle = `rgb(0, ${greenValue}, 0)`;
+            }
+            
+            // Draw rounded snake segment with shadow
+            this.ctx.shadowColor = 'rgba(0, 255, 0, 0.5)';
+            this.ctx.shadowBlur = 10;
+            this.ctx.beginPath();
+            this.ctx.roundRect(
+                x + 1, y + 1, 
+                this.cellSize - 2, 
+                this.cellSize - 2, 
+                [this.cellSize / 4]
+            );
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
+        });
+        
+        // Display score on canvas
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = 'bold 16px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(`Score: ${this.score}`, 10, 25);
+    },
+    
+    generateFood: function() {
+        // Debug
+        console.log("Generating new food");
+        
+        let newFood;
+        let foodOnSnake;
+        
+        do {
+            foodOnSnake = false;
+            newFood = {
+                x: Math.floor(Math.random() * (this.canvas.width / this.cellSize)),
+                y: Math.floor(Math.random() * (this.canvas.height / this.cellSize))
+            };
+            
+            // Debug
+            console.log(`Trying food at: x=${newFood.x}, y=${newFood.y}`);
+            
+            // Check if food is on snake
+            for (let i = 0; i < this.snake.length; i++) {
+                if (this.snake[i].x === newFood.x && this.snake[i].y === newFood.y) {
+                    foodOnSnake = true;
+                    console.log("Food was on snake, retrying");
+                    break;
+                }
+            }
+        } while (foodOnSnake);
+        
+        console.log(`Generated food at: x=${newFood.x}, y=${newFood.y}`);
+        return newFood;
+    },
+    
+    endGame: function() {
+        this.gameOver = true;
+        clearInterval(this.gameInterval);
+        
+        // Only show the game over modal if the score is updated
+        // This prevents the immediate game over when starting
+        gameController.showModal('Game Over', `Your score: ${this.score}`);
+    },
+    
+    stop: function() {
+        clearInterval(this.gameInterval);
+        document.removeEventListener('keydown', this.handleKeyPress);
+        this.initialized = false;
+    },
+
+    // Add animation for food collection
+    showFoodCollectionAnimation: function(x, y) {
+        // Create canvas overlay for animation
+        const overlay = document.createElement('canvas');
+        overlay.width = this.canvas.width;
+        overlay.height = this.canvas.height;
+        overlay.style.position = 'absolute';
+        overlay.style.top = this.canvas.offsetTop + 'px';
+        overlay.style.left = this.canvas.offsetLeft + 'px';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '10';
+        document.getElementById('snake-container').appendChild(overlay);
+        
+        const ctx = overlay.getContext('2d');
+        const startTime = Date.now();
+        const duration = 600; // ms
+        const cellSize = this.cellSize;
+        
+        // Animation function
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            ctx.clearRect(0, 0, overlay.width, overlay.height);
+            
+            // Draw particles
+            const numParticles = 12;
+            const radius = cellSize/2 * progress;
+            
+            for (let i = 0; i < numParticles; i++) {
+                const angle = (i / numParticles) * Math.PI * 2;
+                const distance = cellSize * 1.5 * progress;
+                const particleX = (x * cellSize + cellSize/2) + Math.cos(angle) * distance;
+                const particleY = (y * cellSize + cellSize/2) + Math.sin(angle) * distance;
+                const particleSize = (1 - progress) * 5;
+                
+                ctx.fillStyle = `rgba(255, 165, 0, ${1 - progress})`;
+                ctx.beginPath();
+                ctx.arc(particleX, particleY, particleSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw circle wave
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - progress})`;
+            ctx.lineWidth = 3 * (1 - progress);
+            ctx.beginPath();
+            ctx.arc(x * cellSize + cellSize/2, y * cellSize + cellSize/2, 
+                distance / 2, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Remove overlay when animation is complete
+                overlay.remove();
+            }
+        };
+        
+        animate();
+    },
+
+    // Fix the snake movement and direction handling
+    handleKeyPress: function(e) {
+        // Clear any auto-movement timeout
+        if (this.autoMoveTimeout) {
+            clearTimeout(this.autoMoveTimeout);
+        }
+        
+        console.log("Key pressed:", e.key);
+        
+        // Do nothing if game is over
+        if (this.gameOver) return;
+        
+        // Change direction based on key pressed
+        // Prevent 180 degree turns by checking current direction
+        switch(e.key) {
+            case 'ArrowUp':
+            case 'w':
+            case 'W':
+                if (this.direction.y !== 1) {
+                    this.nextDirection = {x: 0, y: -1};
+                    console.log("Direction changed to UP");
+                }
+                break;
+            case 'ArrowDown':
+            case 's':
+            case 'S':
+                if (this.direction.y !== -1) {
+                    this.nextDirection = {x: 0, y: 1};
+                    console.log("Direction changed to DOWN");
+                }
+                break;
+            case 'ArrowLeft':
+            case 'a':
+            case 'A':
+                if (this.direction.x !== 1) {
+                    this.nextDirection = {x: -1, y: 0};
+                    console.log("Direction changed to LEFT");
+                }
+                break;
+            case 'ArrowRight':
+            case 'd':
+            case 'D':
+                if (this.direction.x !== -1) {
+                    this.nextDirection = {x: 1, y: 0};
+                    console.log("Direction changed to RIGHT");
+                }
+                break;
+        }
+        
+        // Start auto-movement if snake is not moving
+        if (this.direction.x === 0 && this.direction.y === 0) {
+            this.direction = {...this.nextDirection};
+            console.log("Starting auto-movement");
+        }
+    }
+};
+
+// Memory Game
+const memoryGame = {
+    cards: [],
+    flippedCards: [],
+    matchedCards: [],
+    moves: 0,
+    totalPairs: 8,
+    canFlip: true,
+    initialized: false,
+    
+    init: function() {
+        this.initialized = true;
+        this.cards = [];
+        this.flippedCards = [];
+        this.matchedCards = [];
+        this.moves = 0;
+        this.canFlip = true;
+        
+        // Generate cards
+        this.generateCards();
+        
+        // Render board
+        this.renderBoard();
+        
+        // Update status
+        this.updateStatus();
+    },
+    
+    generateCards: function() {
+        const symbols = ['🐱', '🐶', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔'];
+        const selectedSymbols = symbols.slice(0, 8);
+        
+        // Create pairs
+        for (let i = 0; i < selectedSymbols.length; i++) {
+            this.cards.push({ id: i*2, symbol: selectedSymbols[i], isFlipped: false, isMatched: false });
+            this.cards.push({ id: i*2+1, symbol: selectedSymbols[i], isFlipped: false, isMatched: false });
+        }
+        
+        // Shuffle cards
+        this.shuffle(this.cards);
+    },
+    
+    shuffle: function(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    },
+    
+    renderBoard: function() {
+        const board = document.querySelector('.memory-board');
+        board.innerHTML = '';
+        
+        this.cards.forEach(card => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'memory-card';
+            if (card.isFlipped || card.isMatched) {
+                cardEl.classList.add('flipped');
+            }
+            
+            cardEl.innerHTML = `
+                <div class="front">${card.symbol}</div>
+                <div class="back">?</div>
+            `;
+            
+            cardEl.setAttribute('data-id', card.id);
+            cardEl.onclick = () => this.flipCard(card.id);
+            
+            board.appendChild(cardEl);
+        });
+    },
+    
+    flipCard: function(id) {
+        if (!this.canFlip) return;
+        
+        const card = this.cards.find(c => c.id === id);
+        
+        if (card.isFlipped || card.isMatched) return;
+        if (this.flippedCards.length >= 2) return;
+        
+        // Flip card
+        card.isFlipped = true;
+        this.flippedCards.push(card);
+        
+        // Update UI
+        const cardEl = document.querySelector(`.memory-card[data-id="${id}"]`);
+        cardEl.classList.add('flipped');
+        
+        // Check for match if we have two cards flipped
+        if (this.flippedCards.length === 2) {
+            this.moves++;
+            this.updateStatus();
+            
+            this.canFlip = false;
+            setTimeout(() => {
+                this.checkMatch();
+                this.canFlip = true;
+            }, 1000);
+        }
+    },
+    
+    checkMatch: function() {
+        const [card1, card2] = this.flippedCards;
+        
+        if (card1.symbol === card2.symbol) {
+            // Match found
+            card1.isMatched = true;
+            card2.isMatched = true;
+            this.matchedCards.push(card1, card2);
+            
+            // Update score
+            gameController.score += 10;
+            gameController.updateScore();
+            
+            // Check if game complete
+            if (this.matchedCards.length === this.cards.length) {
+                setTimeout(() => {
+                    gameController.showModal('Congratulations!', `You found all matches in ${this.moves} moves!`);
+                }, 500);
+            }
+        } else {
+            // No match, flip cards back
+            card1.isFlipped = false;
+            card2.isFlipped = false;
+            
+            // Update UI
+            document.querySelector(`.memory-card[data-id="${card1.id}"]`).classList.remove('flipped');
+            document.querySelector(`.memory-card[data-id="${card2.id}"]`).classList.remove('flipped');
+        }
+        
+        // Reset flipped cards
+        this.flippedCards = [];
+        this.updateStatus();
+    },
+    
+    updateStatus: function() {
+        const matchedPairs = this.matchedCards.length / 2;
+        document.getElementById('memory-status').textContent = `Moves: ${this.moves} | Pairs: ${matchedPairs}/8`;
+    },
+    
+    stop: function() {
+        this.initialized = false;
+        const cards = document.querySelectorAll('.memory-card');
+        cards.forEach(card => {
+            card.onclick = null;
+        });
+    }
+};
+
+// Word Memory Game
+const wordMemoryGame = {
+    words: [],
+    displayedWords: [],
+    userGuess: [],
+    level: 1,
+    memorizeTime: 5000,
+    roundDelay: 2000,
+    gameStatus: 'idle', // idle, memorize, input
+    initialized: false,
+    
+    init: function() {
+        this.initialized = true;
+        this.level = 1;
+        this.gameStatus = 'idle';
+        this.displayedWords = [];
+        this.userGuess = [];
+        
+        // Word lists
+        this.wordLists = {
+            animals: ['cat', 'dog', 'lion', 'tiger', 'bear', 'fox', 'wolf', 'snake', 'eagle', 'owl'],
+            fruits: ['apple', 'banana', 'orange', 'grape', 'kiwi', 'mango', 'lemon', 'peach', 'cherry', 'plum'],
+            colors: ['red', 'blue', 'green', 'yellow', 'black', 'white', 'purple', 'orange', 'pink', 'brown']
+        };
+        
+        // Generate words
+        this.generateWords();
+        
+        // Update UI
+        document.getElementById('word-display').textContent = 'Ready? Press Restart to begin!';
+        document.getElementById('word-input-area').classList.add('hidden');
+        document.getElementById('word-memory-status').textContent = `Level ${this.level}`;
+        
+        // Setup event listeners
+        document.getElementById('word-submit').onclick = () => this.checkAnswer();
+        document.getElementById('word-input').onkeyup = (e) => {
+            if (e.key === 'Enter') this.checkAnswer();
+        };
+    },
+    
+    generateWords: function() {
+        // Select random category
+        const categories = Object.keys(this.wordLists);
+        const category = categories[Math.floor(Math.random() * categories.length)];
+        this.words = [...this.wordLists[category]];
+        this.shuffle(this.words);
+    },
+    
+    shuffle: function(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    },
+    
+    startRound: function() {
+        if (this.gameStatus !== 'idle') return;
+        
+        this.gameStatus = 'memorize';
+        
+        // Select words for this level
+        const numWords = Math.min(this.level + 2, 10); // Level 1: 3 words, Level 2: 4 words, etc.
+        this.displayedWords = this.words.slice(0, numWords);
+        
+        // Display words
+        document.getElementById('word-display').textContent = this.displayedWords.join(' - ');
+        document.getElementById('word-input-area').classList.add('hidden');
+        document.getElementById('word-memory-status').textContent = `Level ${this.level} - Memorize these words!`;
+        
+        // Set timer for input phase
+        setTimeout(() => {
+            this.gameStatus = 'input';
+            document.getElementById('word-display').textContent = 'Type the words you remember (separated by spaces)';
+            document.getElementById('word-input-area').classList.remove('hidden');
+            document.getElementById('word-input').value = '';
+            document.getElementById('word-input').focus();
+            document.getElementById('word-memory-status').textContent = `Level ${this.level} - Recall the words`;
+        }, this.memorizeTime);
+    },
+    
+    checkAnswer: function() {
+        if (this.gameStatus !== 'input') return;
+        
+        const input = document.getElementById('word-input').value.trim().toLowerCase();
+        this.userGuess = input.split(/\s+/);
+        
+        // Count correct words
+        let correct = 0;
+        const displayedSet = new Set(this.displayedWords);
+        
+        this.userGuess.forEach(word => {
+            if (displayedSet.has(word)) {
+                correct++;
+                displayedSet.delete(word); // Don't count duplicates
+            }
+        });
+        
+        // Calculate score
+        const totalWords = this.displayedWords.length;
+        const percentage = Math.round((correct / totalWords) * 100);
+        
+        // Hide input
+        document.getElementById('word-input-area').classList.add('hidden');
+        
+        // Check if passed
+        if (correct === totalWords) {
+            // Perfect score
+            document.getElementById('word-display').textContent = `Perfect! You remembered all ${totalWords} words!`;
+            gameController.score += totalWords * 10;
+            gameController.updateScore();
+            
+            // Level up
+            this.level++;
+            
+            setTimeout(() => {
+                gameController.showModal('Perfect!', `You remembered all ${totalWords} words! Moving to level ${this.level}.`);
+                this.gameStatus = 'idle';
+            }, this.roundDelay);
+        } else if (percentage >= 70) {
+            // Good enough
+            document.getElementById('word-display').textContent = `Good job! You remembered ${correct} out of ${totalWords} words.`;
+            gameController.score += correct * 5;
+            gameController.updateScore();
+            
+            // Level up
+            this.level++;
+            
+            setTimeout(() => {
+                gameController.showModal('Level Complete', `You remembered ${correct} out of ${totalWords} words (${percentage}%). Moving to level ${this.level}.`);
+                this.gameStatus = 'idle';
+            }, this.roundDelay);
+        } else {
+            // Failed
+            document.getElementById('word-display').textContent = `Try again. You remembered ${correct} out of ${totalWords} words.`;
+            gameController.score += correct * 2;
+            gameController.updateScore();
+            
+            setTimeout(() => {
+                gameController.showModal('Try Again', `You remembered ${correct} out of ${totalWords} words (${percentage}%). Try again to pass level ${this.level}.`);
+                this.gameStatus = 'idle';
+            }, this.roundDelay);
+        }
+    },
+    
+    stop: function() {
+        this.initialized = false;
+        document.getElementById('word-submit').onclick = null;
+        document.getElementById('word-input').onkeyup = null;
+    }
+};
+
+// Rock Paper Scissors Game
+const rockPaperScissors = {
+    playerChoice: null,
+    computerChoice: null,
+    playerScore: 0,
+    computerScore: 0,
+    rounds: 0,
+    maxRounds: 5,
+    choices: ['rock', 'paper', 'scissors'],
+    initialized: false,
+    
+    init: function() {
+        this.initialized = true;
+        this.playerChoice = null;
+        this.computerChoice = null;
+        this.playerScore = 0;
+        this.computerScore = 0;
+        this.rounds = 0;
+        
+        // Reset UI
+        document.getElementById('player-choice').innerHTML = '?';
+        document.getElementById('computer-choice').innerHTML = '?';
+        document.getElementById('rps-status').textContent = 'Choose rock, paper, or scissors';
+        
+        // Setup event listeners
+        const choices = document.querySelectorAll('.rps-choice');
+        choices.forEach(choice => {
+            choice.onclick = (e) => this.makeChoice(e.currentTarget.getAttribute('data-choice'));
+        });
+    },
+    
+    makeChoice: function(choice) {
+        if (this.rounds >= this.maxRounds) return;
+        
+        this.playerChoice = choice;
+        
+        // Generate computer choice
+        this.computerChoice = this.choices[Math.floor(Math.random() * this.choices.length)];
+        
+        // Update UI
+        this.updateChoiceDisplay();
+        
+        // Determine winner
+        const result = this.determineWinner();
+        
+        // Update score
+        if (result === 'player') {
+            this.playerScore++;
+            gameController.score += 5;
+            gameController.updateScore();
+            document.getElementById('rps-status').textContent = 'You win this round!';
+        } else if (result === 'computer') {
+            this.computerScore++;
+            document.getElementById('rps-status').textContent = 'Computer wins this round!';
+        } else {
+            document.getElementById('rps-status').textContent = 'It\'s a tie!';
+        }
+        
+        // Update rounds
+        this.rounds++;
+        
+        // Check if game over
+        if (this.rounds >= this.maxRounds) {
+            this.endGame();
+        }
+    },
+    
+    updateChoiceDisplay: function() {
+        const emojiMap = {
+            rock: '👊',
+            paper: '✋',
+            scissors: '✌️'
+        };
+        
+        document.getElementById('player-choice').innerHTML = emojiMap[this.playerChoice];
+        document.getElementById('computer-choice').innerHTML = emojiMap[this.computerChoice];
+    },
+    
+    determineWinner: function() {
+        if (this.playerChoice === this.computerChoice) {
+            return 'tie';
+        }
+        
+        if (
+            (this.playerChoice === 'rock' && this.computerChoice === 'scissors') ||
+            (this.playerChoice === 'paper' && this.computerChoice === 'rock') ||
+            (this.playerChoice === 'scissors' && this.computerChoice === 'paper')
+        ) {
+            return 'player';
+        } else {
+            return 'computer';
+        }
+    },
+    
+    endGame: function() {
+        let resultMessage;
+        
+        if (this.playerScore > this.computerScore) {
+            resultMessage = `You win! Final score: You ${this.playerScore} - Computer ${this.computerScore}`;
+            gameController.score += 20;
+            gameController.updateScore();
+        } else if (this.computerScore > this.playerScore) {
+            resultMessage = `Computer wins! Final score: You ${this.playerScore} - Computer ${this.computerScore}`;
+        } else {
+            resultMessage = `It's a tie! Final score: You ${this.playerScore} - Computer ${this.computerScore}`;
+            gameController.score += 10;
+            gameController.updateScore();
+        }
+        
+        document.getElementById('rps-status').textContent = resultMessage;
+        
+        setTimeout(() => {
+            gameController.showModal('Game Over', resultMessage);
+        }, 1000);
+    },
+    
+    stop: function() {
+        this.initialized = false;
+        const choices = document.querySelectorAll('.rps-choice');
+        choices.forEach(choice => {
+            choice.onclick = null;
+        });
+    }
+};
+
+// Catch Objects Game
+const catchGame = {
+    canvas: null,
+    ctx: null,
+    player: {
+        x: 0,
+        y: 0,
+        width: 60,
+        height: 20,
+        speed: 8
+    },
+    objects: [],
+    fallingSpeed: 3,
+    spawnRate: 50,
+    score: 0,
+    lives: 3,
+    gameInterval: null,
+    keys: {
+        left: false,
+        right: false
+    },
+    initialized: false,
+    
+    init: function() {
+        this.initialized = true;
+        this.canvas = document.getElementById('catch-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        
+        // Reset game state
+        this.objects = [];
+        this.score = 0;
+        this.lives = 3;
+        
+        // Set player position
+        this.player.x = this.canvas.width / 2 - this.player.width / 2;
+        this.player.y = this.canvas.height - this.player.height - 10;
+        
+        // Setup keyboard controls
+        window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener('keyup', this.handleKeyUp);
+        
+        window.addEventListener('keydown', this.handleKeyDown.bind(this));
+        window.addEventListener('keyup', this.handleKeyUp.bind(this));
+        
+        // Start game loop
+        clearInterval(this.gameInterval);
+        this.gameInterval = setInterval(this.gameLoop.bind(this), 20);
+    },
+    
+    gameLoop: function() {
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Move player
+        this.movePlayer();
+        
+        // Spawn objects
+        if (Math.random() * 100 < this.spawnRate / 30) {
+            this.spawnObject();
+        }
+        
+        // Update and draw objects
+        this.updateObjects();
+        
+        // Draw player
+        this.drawPlayer();
+        
+        // Draw UI
+        this.drawUI();
+        
+        // When score changes, update it immediately
+        gameController.score = this.score;
+        gameController.updateScore();
+    },
+    
+    movePlayer: function() {
+        if (this.keys.left && this.player.x > 0) {
+            this.player.x -= this.player.speed;
+        }
+        
+        if (this.keys.right && this.player.x < this.canvas.width - this.player.width) {
+            this.player.x += this.player.speed;
+        }
+    },
+    
+    handleKeyDown: function(e) {
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+            this.keys.left = true;
+        } else if (e.key === 'ArrowRight' || e.key === 'd') {
+            this.keys.right = true;
+        }
+    },
+    
+    handleKeyUp: function(e) {
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+            this.keys.left = false;
+        } else if (e.key === 'ArrowRight' || e.key === 'd') {
+            this.keys.right = false;
+        }
+    },
+    
+    spawnObject: function() {
+        const types = [
+            {color: '#e84118', points: 10, radius: 10}, // Regular
+            {color: '#fbc531', points: 20, radius: 8},  // Small but valuable
+            {color: '#44bd32', points: 5, radius: 15},  // Big but less valuable
+            {color: '#0097e6', points: -10, radius: 10} // Negative points
+        ];
+        
+        const type = types[Math.floor(Math.random() * types.length)];
+        
+        this.objects.push({
+            x: Math.random() * (this.canvas.width - 20) + 10,
+            y: 0,
+            radius: type.radius,
+            color: type.color,
+            points: type.points
+        });
+    },
+    
+    updateObjects: function() {
+        for (let i = 0; i < this.objects.length; i++) {
+            const obj = this.objects[i];
+            
+            // Move object down
+            obj.y += this.fallingSpeed;
+            
+            // Draw object
+            this.ctx.beginPath();
+            this.ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+            this.ctx.fillStyle = obj.color;
+            this.ctx.fill();
+            
+            // Check if caught
+            if (
+                obj.y + obj.radius > this.player.y &&
+                obj.y - obj.radius < this.player.y + this.player.height &&
+                obj.x + obj.radius > this.player.x &&
+                obj.x - obj.radius < this.player.x + this.player.width
+            ) {
+                // Update score
+                this.score += obj.points;
+                gameController.score += obj.points;
+                gameController.updateScore();
+                
+                // Remove object
+                this.objects.splice(i, 1);
+                i--;
+            }
+            // Check if missed
+            else if (obj.y - obj.radius > this.canvas.height) {
+                // If positive points, lose a life
+                if (obj.points > 0) {
+                    this.lives--;
+                    
+                    // Check for game over
+                    if (this.lives <= 0) {
+                        clearInterval(this.gameInterval);
+                        gameController.showModal('Game Over', `Your final score: ${this.score}`);
+                    }
+                }
+                
+                // Remove object
+                this.objects.splice(i, 1);
+                i--;
+            }
+        }
+    },
+    
+    drawPlayer: function() {
+        this.ctx.fillStyle = '#4a69bd';
+        this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+    },
+    
+    drawUI: function() {
+        this.ctx.fillStyle = '#000';
+        this.ctx.font = '16px Arial';
+        this.ctx.fillText(`Score: ${this.score}`, 10, 20);
+        this.ctx.fillText(`Lives: ${this.lives}`, this.canvas.width - 80, 20);
+    },
+    
+    stop: function() {
+        clearInterval(this.gameInterval);
+        window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener('keyup', this.handleKeyUp);
+        this.initialized = false;
+    }
+};
+
+// Add particle background
+function initParticleBackground() {
+    const particlesJS = window.particlesJS;
+    if (!particlesJS) return;
+    
+    particlesJS('particles-js', {
+        "particles": {
+            "number": {
+                "value": 80,
+                "density": {
+                    "enable": true,
+                    "value_area": 800
+                }
+            },
+            "color": {
+                "value": "#ffffff"
+            },
+            "shape": {
+                "type": "circle",
+                "stroke": {
+                    "width": 0,
+                    "color": "#000000"
+                },
+            },
+            "opacity": {
+                "value": 0.5,
+                "random": false,
+                "anim": {
+                    "enable": false,
+                    "speed": 1,
+                    "opacity_min": 0.1,
+                    "sync": false
+                }
+            },
+            "size": {
+                "value": 3,
+                "random": true,
+                "anim": {
+                    "enable": false,
+                    "speed": 40,
+                    "size_min": 0.1,
+                    "sync": false
+                }
+            },
+            "line_linked": {
+                "enable": true,
+                "distance": 150,
+                "color": "#ffffff",
+                "opacity": 0.4,
+                "width": 1
+            },
+            "move": {
+                "enable": true,
+                "speed": 6,
+                "direction": "none",
+                "random": false,
+                "straight": false,
+                "out_mode": "out",
+                "bounce": false,
+                "attract": {
+                    "enable": false,
+                    "rotateX": 600,
+                    "rotateY": 1200
+                }
+            }
+        },
+        "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+                "onhover": {
+                    "enable": true,
+                    "mode": "repulse"
+                },
+                "onclick": {
+                    "enable": true,
+                    "mode": "push"
+                },
+                "resize": true
+            },
+            "modes": {
+                "grab": {
+                    "distance": 400,
+                    "line_linked": {
+                        "opacity": 1
+                    }
+                },
+                "bubble": {
+                    "distance": 400,
+                    "size": 40,
+                    "duration": 2,
+                    "opacity": 8,
+                    "speed": 3
+                },
+                "repulse": {
+                    "distance": 100,
+                    "duration": 0.4
+                },
+                "push": {
+                    "particles_nb": 4
+                },
+                "remove": {
+                    "particles_nb": 2
+                }
+            }
+        },
+        "retina_detect": true
+    });
+} 

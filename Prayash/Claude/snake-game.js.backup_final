@@ -1,0 +1,514 @@
+// Snake Game with 3-second instruction animation and auto-start
+document.addEventListener('DOMContentLoaded', function() {
+    console.clear();
+    console.log("=== SNAKE GAME WITH ANIMATION AND AUTO-START ===");
+    
+    // Store original start game function
+    const originalStartGame = gameController.startGame;
+    
+    // Override start game function
+    gameController.startGame = function(gameType) {
+        if (gameType === 'snake') {
+            console.log("Starting Snake Game with instruction animation and auto-start");
+            
+            // Set up game area
+            const gameArea = document.getElementById('game-area');
+            gameArea.classList.remove('hidden');
+            
+            // Hide all game containers and show snake container
+            document.querySelectorAll('.game-container').forEach(container => {
+                container.classList.add('hidden');
+            });
+            document.getElementById('snake-container').classList.remove('hidden');
+            
+            // IMPORTANT: Hide the start screen so "Start Game" doesn't show again
+            const startScreen = document.getElementById('snake-start-screen');
+            if (startScreen) {
+                startScreen.classList.add('hidden');
+                startScreen.style.display = 'none';
+            }
+            
+            // Show canvas with LARGER size
+            const canvas = document.getElementById('snake-canvas');
+            canvas.width = 500;  // Increased canvas width
+            canvas.height = 500; // Increased canvas height
+            canvas.classList.remove('hidden');
+            canvas.style.display = 'block';
+            
+            // Additional styling to ensure proper display
+            canvas.style.maxWidth = '100%';
+            canvas.style.margin = '0 auto';
+            canvas.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.3)';
+            canvas.style.borderRadius = '8px';
+            
+            // Update game title
+            document.getElementById('current-game-title').textContent = 'Snake Game';
+            
+            // Initialize the game immediately
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas with a background color
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update cell size for larger canvas
+            const cellSize = 25; // Larger cell size for the bigger canvas
+            
+            // Create and initialize SnakeGame object
+            const SnakeGame = {
+                canvas: canvas,
+                ctx: ctx,
+                gridSize: 20,
+                cellSize: cellSize, // Using the larger cell size
+                snake: [
+                    {x: 10, y: 10},
+                    {x: 9, y: 10},
+                    {x: 8, y: 10}
+                ],
+                food: null,
+                direction: '',
+                nextDirection: '',
+                score: 0,
+                gameStarted: false,
+                gameOver: false,
+                gameInterval: null,
+                
+                init: function() {
+                    // Reset game state
+                    this.snake = [
+                        {x: 10, y: 10},
+                        {x: 9, y: 10},
+                        {x: 8, y: 10}
+                    ];
+                    this.direction = '';
+                    this.nextDirection = '';
+                    this.score = 0;
+                    this.gameStarted = false;
+                    this.gameOver = false;
+                    
+                    // Generate initial food
+                    this.generateFood();
+                    
+                    // Set up event listeners
+                    this.setupControls();
+                    
+                    // Clear any existing game loops
+                    if (this.gameInterval) {
+                        clearInterval(this.gameInterval);
+                    }
+                    
+                    // Start game loop
+                    this.gameInterval = setInterval(() => this.update(), 150);
+                    
+                    // Render initial state
+                    this.draw();
+                    
+                    console.log("Snake game initialized");
+                },
+                
+                setupControls: function() {
+                    // Keyboard controls
+                    document.addEventListener('keydown', (e) => {
+                        if (!this.gameStarted) {
+                            // Start game on any direction key
+                            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 's', 'a', 'd'].includes(e.key)) {
+                                this.gameStarted = true;
+                            }
+                        }
+                        
+                        switch (e.key) {
+                            case 'ArrowUp':
+                            case 'w':
+                            case 'W':
+                                if (this.direction !== 'down') this.nextDirection = 'up';
+                                break;
+                            case 'ArrowDown':
+                            case 's':
+                            case 'S':
+                                if (this.direction !== 'up') this.nextDirection = 'down';
+                                break;
+                            case 'ArrowLeft':
+                            case 'a':
+                            case 'A':
+                                if (this.direction !== 'right') this.nextDirection = 'left';
+                                break;
+                            case 'ArrowRight':
+                            case 'd':
+                            case 'D':
+                                if (this.direction !== 'left') this.nextDirection = 'right';
+                                break;
+                        }
+                    });
+                    
+                    // Touch controls
+                    const touchControls = document.querySelectorAll('.arrow-key');
+                    touchControls.forEach(control => {
+                        control.addEventListener('click', () => {
+                            if (!this.gameStarted) {
+                                this.gameStarted = true;
+                            }
+                            
+                            if (control.classList.contains('up')) {
+                                if (this.direction !== 'down') this.nextDirection = 'up';
+                            } else if (control.classList.contains('down')) {
+                                if (this.direction !== 'up') this.nextDirection = 'down';
+                            } else if (control.classList.contains('left')) {
+                                if (this.direction !== 'right') this.nextDirection = 'left';
+                            } else if (control.classList.contains('right')) {
+                                if (this.direction !== 'left') this.nextDirection = 'right';
+                            }
+                        });
+                    });
+                },
+                
+                generateFood: function() {
+                    let x, y;
+                    let validPosition = false;
+                    
+                    while (!validPosition) {
+                        x = Math.floor(Math.random() * this.gridSize);
+                        y = Math.floor(Math.random() * this.gridSize);
+                        
+                        validPosition = true;
+                        
+                        // Check if food overlaps with snake
+                        for (let segment of this.snake) {
+                            if (segment.x === x && segment.y === y) {
+                                validPosition = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    this.food = {x, y};
+                },
+                
+                update: function() {
+                    if (!this.gameStarted || this.gameOver) return;
+                    
+                    // Update direction from next direction
+                    this.direction = this.nextDirection;
+                    
+                    // Move snake based on direction
+                    let newHead = {x: this.snake[0].x, y: this.snake[0].y};
+                    
+                    switch (this.direction) {
+                        case 'up':
+                            newHead.y -= 1;
+                            break;
+                        case 'down':
+                            newHead.y += 1;
+                            break;
+                        case 'left':
+                            newHead.x -= 1;
+                            break;
+                        case 'right':
+                            newHead.x += 1;
+                            break;
+                        default:
+                            // No movement if no direction
+                            return;
+                    }
+                    
+                    // Check for collisions with walls
+                    if (
+                        newHead.x < 0 || 
+                        newHead.x >= this.gridSize ||
+                        newHead.y < 0 || 
+                        newHead.y >= this.gridSize
+                    ) {
+                        this.gameOver = true;
+                        this.draw();
+                        return;
+                    }
+                    
+                    // Check for collisions with self
+                    for (let segment of this.snake) {
+                        if (segment.x === newHead.x && segment.y === newHead.y) {
+                            this.gameOver = true;
+                            this.draw();
+                            return;
+                        }
+                    }
+                    
+                    // Check for collision with food
+                    const ateFood = (newHead.x === this.food.x && newHead.y === this.food.y);
+                    
+                    // Add new head to snake
+                    this.snake.unshift(newHead);
+                    
+                    // If not eating food, remove tail
+                    if (!ateFood) {
+                        this.snake.pop();
+                    } else {
+                        // Generate new food
+                        this.generateFood();
+                        
+                        // Update score
+                        this.score += 10;
+                        this.updateScoreDisplay();
+                    }
+                    
+                    // Draw updated state
+                    this.draw();
+                },
+                
+                draw: function() {
+                    // Clear the canvas with background
+                    this.ctx.fillStyle = '#1a1a2e';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // Draw grid lines for better visibility
+                    this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    for (let x = 0; x <= this.canvas.width; x += this.cellSize) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(x, 0);
+                        this.ctx.lineTo(x, this.canvas.height);
+                        this.ctx.stroke();
+                    }
+                    for (let y = 0; y <= this.canvas.height; y += this.cellSize) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(0, y);
+                        this.ctx.lineTo(this.canvas.width, y);
+                        this.ctx.stroke();
+                    }
+                    
+                    // Draw food
+                    if (this.food) {
+                        this.ctx.fillStyle = '#ff0080';
+                        this.ctx.beginPath();
+                        this.ctx.arc(
+                            this.food.x * this.cellSize + this.cellSize / 2,
+                            this.food.y * this.cellSize + this.cellSize / 2,
+                            this.cellSize / 2 - 2,
+                            0,
+                            Math.PI * 2
+                        );
+                        this.ctx.fill();
+                    }
+                    
+                    // Draw snake body
+                    for (let i = 0; i < this.snake.length; i++) {
+                        // Head is brighter green, body parts get progressively darker
+                        const colorValue = Math.max(50, 255 - (i * 10));
+                        this.ctx.fillStyle = i === 0 ? '#00ff00' : `rgb(0, ${colorValue}, 0)`;
+                        
+                        this.ctx.fillRect(
+                            this.snake[i].x * this.cellSize + 1,
+                            this.snake[i].y * this.cellSize + 1,
+                            this.cellSize - 2,
+                            this.cellSize - 2
+                        );
+                    }
+                    
+                    // Draw start instructions if game not started
+                    if (!this.gameStarted && !this.gameOver) {
+                        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                        
+                        this.ctx.fillStyle = 'white';
+                        this.ctx.font = '24px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillText(
+                            'Press any arrow key to start',
+                            this.canvas.width / 2,
+                            this.canvas.height / 2
+                        );
+                    }
+                    
+                    // Draw game over screen
+                    if (this.gameOver) {
+                        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                        
+                        this.ctx.fillStyle = 'white';
+                        this.ctx.font = '30px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillText(
+                            'GAME OVER',
+                            this.canvas.width / 2,
+                            this.canvas.height / 2 - 20
+                        );
+                        
+                        this.ctx.font = '24px Arial';
+                        this.ctx.fillText(
+                            `Score: ${this.score}`,
+                            this.canvas.width / 2,
+                            this.canvas.height / 2 + 20
+                        );
+                    }
+                },
+                
+                updateScoreDisplay: function() {
+                    // Update game controller score
+                    gameController.score = this.score;
+                    gameController.updateScore();
+                },
+                
+                endGame: function() {
+                    // Clear game interval
+                    if (this.gameInterval) {
+                        clearInterval(this.gameInterval);
+                        this.gameInterval = null;
+                    }
+                    
+                    // Show game over screen
+                    this.draw();
+                    
+                    // Show modal with final score after a short delay
+                    setTimeout(() => {
+                        gameController.endGame(this.score, 'Game Over');
+                    }, 1500);
+                },
+                
+                reset: function() {
+                    // Clear interval if it exists
+                    if (this.gameInterval) {
+                        clearInterval(this.gameInterval);
+                        this.gameInterval = null;
+                    }
+                    
+                    // Reset game state
+                    this.init();
+                },
+                
+                stop: function() {
+                    // Clear interval if it exists
+                    if (this.gameInterval) {
+                        clearInterval(this.gameInterval);
+                        this.gameInterval = null;
+                    }
+                }
+            };
+            
+            // Initialize Snake Game (but don't start the game loop yet)
+            SnakeGame.init();
+            
+            // Create an overlay for the animation
+            const overlay = document.createElement('div');
+            overlay.id = 'snake-animation-overlay';
+            overlay.style.position = 'absolute';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.display = 'flex';
+            overlay.style.flexDirection = 'column';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            overlay.style.backdropFilter = 'blur(5px)';
+            overlay.style.zIndex = '10';
+            overlay.style.padding = '20px';
+            
+            // Create arrow keys container
+            const arrowsContainer = document.createElement('div');
+            arrowsContainer.style.display = 'grid';
+            arrowsContainer.style.gridTemplateColumns = 'repeat(3, 40px)';
+            arrowsContainer.style.gridTemplateRows = 'repeat(3, 40px)';
+            arrowsContainer.style.gap = '5px';
+            arrowsContainer.style.margin = '15px 0';
+            
+            // Function to create arrow key elements
+            function createArrow(content, className) {
+                const arrow = document.createElement('div');
+                arrow.innerHTML = content;
+                arrow.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+                arrow.style.borderRadius = '6px';
+                arrow.style.width = '35px';
+                arrow.style.height = '35px';
+                arrow.style.display = 'flex';
+                arrow.style.alignItems = 'center';
+                arrow.style.justifyContent = 'center';
+                arrow.style.color = 'white';
+                arrow.style.fontSize = '18px';
+                arrow.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+                arrow.className = className;
+                return arrow;
+            }
+            
+            // Add arrows in grid layout exactly as shown in image
+            // Empty cell (top-left)
+            arrowsContainer.appendChild(document.createElement('div'));
+            // Up arrow (top-center)
+            arrowsContainer.appendChild(createArrow('&#8593;', 'arrow up'));
+            // Empty cell (top-right)
+            arrowsContainer.appendChild(document.createElement('div'));
+            // Left arrow (middle-left)
+            arrowsContainer.appendChild(createArrow('&#8592;', 'arrow left'));
+            // Down arrow (middle-center)
+            arrowsContainer.appendChild(createArrow('&#8595;', 'arrow down'));
+            // Right arrow (middle-right)
+            arrowsContainer.appendChild(createArrow('&#8594;', 'arrow right'));
+            
+            overlay.appendChild(arrowsContainer);
+            
+            // Add instructions with typewriter effect
+            const instructions = document.createElement('div');
+            instructions.style.color = 'white';
+            instructions.style.backgroundColor = 'rgba(156, 39, 176, 0.8)';
+            instructions.style.padding = '10px 15px';
+            instructions.style.borderRadius = '4px';
+            instructions.style.fontSize = '13px';
+            instructions.style.margin = '15px 0 0 0';
+            instructions.style.maxWidth = '250px';
+            instructions.style.textAlign = 'center';
+            instructions.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.3)';
+            overlay.appendChild(instructions);
+            
+            // Add overlay to snake container
+            const snakeContainer = document.getElementById('snake-container');
+            snakeContainer.style.position = 'relative';
+            snakeContainer.appendChild(overlay);
+            
+            // Typewriter effect
+            const instructionText = "Press arrow keys on your computer to move snake";
+            let i = 0;
+            
+            function typeWriter() {
+                if (i < instructionText.length) {
+                    instructions.textContent += instructionText.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 50);
+                }
+            }
+            
+            // Start typewriter animation
+            setTimeout(typeWriter, 500);
+            
+            // Store the game in controller
+            this.currentGame = SnakeGame;
+            
+            // Auto-start game after 3 seconds
+            setTimeout(() => {
+                if (!SnakeGame.gameStarted) {
+                    overlay.style.opacity = '0';
+                    overlay.style.transition = 'opacity 0.5s ease';
+                    
+                    setTimeout(() => {
+                        overlay.remove();
+                    }, 500);
+                    
+                    // Start the game loop
+                    SnakeGame.gameStarted = true;
+                    SnakeGame.startGame();
+                }
+            }, 5000); // 5 seconds to give time for animation and reading
+            
+            // Add restart button functionality
+            const restartButton = document.getElementById('restart-game');
+            if (restartButton) {
+                restartButton.addEventListener('click', () => {
+                    SnakeGame.reset();
+                });
+            }
+            
+            console.log("Snake game initialized with animation");
+        } else {
+            // Use original function for other game types
+            originalStartGame.call(this, gameType);
+        }
+    };
+    
+    console.log("Snake game setup complete with animation and auto-start");
+}); 
