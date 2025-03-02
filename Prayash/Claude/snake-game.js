@@ -591,14 +591,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Store the game in controller
             this.currentGame = SnakeGame;
             
-            // Add restart button functionality
-            const restartButton = document.getElementById('restart-game');
-            if (restartButton) {
-                restartButton.addEventListener('click', () => {
-                    SnakeGame.reset();
-                });
-            }
-            
             console.log("Snake game initialized with animation");
         } else {
             // Use original function for other game types

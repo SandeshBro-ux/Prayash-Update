@@ -209,11 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.checkAnswers();
                 }
             });
-            
-            // Reset game when clicking restart button
-            document.getElementById('restart-game').addEventListener('click', () => {
-                this.reset();
-            });
         }
         
         start() {

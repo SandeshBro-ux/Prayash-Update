@@ -75,6 +75,28 @@ const gameController = {
         document.getElementById('exit-game').addEventListener('click', () => {
             this.exitGame();
         });
+        
+        // Add global restart button handler to reset all game status texts
+        document.getElementById('restart-game').addEventListener('click', () => {
+            // Reset all game status displays to prevent text from one game appearing in another
+            const wordMemoryStatus = document.getElementById('word-memory-status');
+            if (wordMemoryStatus) {
+                wordMemoryStatus.textContent = ''; // Clear the Word Memory game status
+                // Reset any custom styling that might have been applied
+                wordMemoryStatus.style.fontSize = '';
+                wordMemoryStatus.style.fontWeight = '';
+                wordMemoryStatus.style.padding = '';
+                wordMemoryStatus.style.backgroundColor = '';
+                wordMemoryStatus.style.border = '';
+                wordMemoryStatus.style.borderRadius = '';
+                wordMemoryStatus.style.boxShadow = '';
+            }
+            
+            // If the current game has a reset function, call it
+            if (this.currentGame && this.currentGame.reset) {
+                this.currentGame.reset();
+            }
+        });
     },
     
     startGame: function(gameType) {
@@ -101,6 +123,20 @@ const gameController = {
         document.querySelectorAll('.game-container').forEach(container => {
             container.classList.add('hidden');
         });
+        
+        // Reset all game status displays to prevent text from one game appearing in another
+        const wordMemoryStatus = document.getElementById('word-memory-status');
+        if (wordMemoryStatus) {
+            wordMemoryStatus.textContent = ''; // Clear the Word Memory game status
+            // Reset any custom styling that might have been applied
+            wordMemoryStatus.style.fontSize = '';
+            wordMemoryStatus.style.fontWeight = '';
+            wordMemoryStatus.style.padding = '';
+            wordMemoryStatus.style.backgroundColor = '';
+            wordMemoryStatus.style.border = '';
+            wordMemoryStatus.style.borderRadius = '';
+            wordMemoryStatus.style.boxShadow = '';
+        }
         
         // Show specific game container
         document.getElementById(`${gameType}-container`).classList.remove('hidden');
@@ -344,9 +380,6 @@ const gameController = {
             cell.addEventListener('click', handleCellClick);
         });
         
-        // Setup restart button
-        document.getElementById('restart-game').addEventListener('click', resetGame);
-        
         // Initialize game status
         updateStatus();
         
@@ -504,9 +537,6 @@ const gameController = {
         choiceButtons.forEach(button => {
             button.addEventListener('click', handlePlayerChoice);
         });
-        
-        // Setup restart button
-        document.getElementById('restart-game').addEventListener('click', resetGame);
         
         // Store game state and methods for restart
         this.currentGame = {

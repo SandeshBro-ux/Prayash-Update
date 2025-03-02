@@ -96,8 +96,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 { type: 'apple', color: '#ef4444', points: 1, radius: 15, speed: 3, image: null },
                 { type: 'orange', color: '#f97316', points: 2, radius: 12, speed: 3.5, image: null },
                 { type: 'banana', color: '#eab308', points: 3, radius: 10, speed: 4, image: null },
-                { type: 'bomb', color: '#000000', points: -5, radius: 15, speed: 5, image: null }
+                { type: 'bomb', color: '#000000', points: -5, radius: 15, speed: 5.05, image: null }
             ];
+            
+            // Track recent object spawns for fairness
+            this.recentSpawnX = null;
+            this.spawnFairnessWindow = 800; // ms - window to check for fairness
+            this.lastSpawnTime = 0;
             
             // Controls state
             this.keys = {
@@ -204,11 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Reset game when clicking restart button in game header
-            document.getElementById('restart-game').addEventListener('click', () => {
-                this.reset();
-            });
-            
             // Pause game when clicking exit button (if using game controller)
             document.getElementById('exit-game').addEventListener('click', () => {
                 if (this.gameActive) {
@@ -266,10 +266,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Adjust player basket width based on number of falling objects
             // This makes it slightly easier to catch multiple fruits that appear at same time
-            const fallingFruits = this.fallingObjects.filter(obj => obj.type !== 'bomb');
-            if (fallingFruits.length > 1) {
+            const basketWidthFruits = this.fallingObjects.filter(obj => obj.type !== 'bomb');
+            if (basketWidthFruits.length > 1) {
                 // Increase basket width slightly when multiple fruits are on screen
-                const widthIncrease = Math.min(fallingFruits.length * 5, 20); // Cap at 20px increase
+                const widthIncrease = Math.min(basketWidthFruits.length * 5, 20); // Cap at 20px increase
                 this.player.width = 60 + widthIncrease;
             } else {
                 // Reset to normal width
@@ -349,12 +349,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         spawnObject() {
+            const currentTime = performance.now();
+            
             // Select random object type
             const objectType = this.objectTypes[Math.floor(Math.random() * this.objectTypes.length)];
             
+            // Determine spawn position
+            let newX = Math.random() * (this.canvas.width - 40) + 20;
+            
+            // Apply fairness logic for fruits (not bombs)
+            if (objectType.type !== 'bomb' && 
+                this.recentSpawnX !== null && 
+                currentTime - this.lastSpawnTime < this.spawnFairnessWindow) {
+                
+                // Calculate distance from previous spawn
+                const distanceFromLastSpawn = Math.abs(newX - this.recentSpawnX);
+                const maxAllowedDistance = this.canvas.width * 0.5; // 50% of screen width
+                
+                // If too far from previous spawn (would be unfair to catch both)
+                if (distanceFromLastSpawn > maxAllowedDistance) {
+                    // Constrain new position to be closer to previous spawn
+                    if (newX > this.recentSpawnX) {
+                        newX = this.recentSpawnX + (Math.random() * maxAllowedDistance * 0.8);
+                    } else {
+                        newX = this.recentSpawnX - (Math.random() * maxAllowedDistance * 0.8);
+                    }
+                    
+                    // Ensure it's within bounds
+                    newX = Math.max(20, Math.min(this.canvas.width - 20, newX));
+                }
+            }
+            
             // Create new falling object
             const newObject = {
-                x: Math.random() * (this.canvas.width - 40) + 20,
+                x: newX,
                 y: -20,
                 radius: objectType.radius,
                 color: objectType.color,
@@ -364,6 +392,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 rotation: 0,
                 rotationSpeed: (Math.random() - 0.5) * 0.1
             };
+            
+            // Remember this spawn for fairness calculations
+            this.recentSpawnX = newX;
+            this.lastSpawnTime = currentTime;
             
             this.fallingObjects.push(newObject);
         }
@@ -526,7 +558,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         drawGame() {
-            // Draw player's basket
+            // Draw backdrop gradient
+            const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+            gradient.addColorStop(0, '#0f172a');
+            gradient.addColorStop(1, '#1e293b');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Draw multi-fruit indicator - alert when multiple fruits are on screen
+            const fallingFruits = this.fallingObjects.filter(obj => obj.type !== 'bomb');
+            if (fallingFruits.length > 1) {
+                // Calculate the approximate midpoint between fruits
+                let minX = this.canvas.width;
+                let maxX = 0;
+                
+                fallingFruits.forEach(fruit => {
+                    minX = Math.min(minX, fruit.x);
+                    maxX = Math.max(maxX, fruit.x);
+                });
+                
+                // Only show if fruits are sufficiently far apart
+                if (maxX - minX > this.canvas.width * 0.3) {
+                    // Draw a subtle arrow or indicator where player should position
+                    const midX = (minX + maxX) / 2;
+                    
+                    // Draw indicator at the bottom of the screen
+                    this.ctx.save();
+                    this.ctx.globalAlpha = 0.6;
+                    this.ctx.fillStyle = '#4ade80'; // Green indicator
+                    
+                    // Draw triangle pointing up at the optimal position
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(midX, this.canvas.height - 15);
+                    this.ctx.lineTo(midX - 10, this.canvas.height - 5);
+                    this.ctx.lineTo(midX + 10, this.canvas.height - 5);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    
+                    // Draw a subtle pulsing effect
+                    const pulseAmount = 0.7 + 0.3 * Math.sin(performance.now() / 200);
+                    this.ctx.strokeStyle = '#22c55e';
+                    this.ctx.globalAlpha = pulseAmount * 0.4;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+                    
+                    this.ctx.restore();
+                }
+            }
+            
+            // Draw player basket
             this.drawBasket();
             
             // Draw falling objects
