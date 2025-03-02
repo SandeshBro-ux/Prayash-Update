@@ -1,0 +1,560 @@
+/* Word Memory Game Styles */
+
+/* Word Memory Game Area */
+#word-memory-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+    transition: filter 0.5s ease;
+}
+
+/* Fullscreen dimming overlay for spotlight effect */
+.dimming-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    animation: fade-in 0.5s ease-in;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Dimming effect for spotlight - keep for backward compatibility */
+.dimmed-background {
+    filter: brightness(0.7); /* Reduce brightness by 30% */
+}
+
+/* Super spotlight effect - ensures element is completely unaffected by any dimming */
+.super-spotlight {
+    filter: brightness(1.1) !important; /* Make 10% brighter and override any inherited filters */
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+    animation: super-spotlight-glow 2s ease-in-out;
+    background-color: rgba(37, 99, 235, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 15px 25px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.6rem;
+    max-width: 90vw; /* Prevent text from extending off-screen on mobile */
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    white-space: normal; /* Allow text to wrap */
+    transform: translateX(-50%); /* Center horizontally relative to the left position */
+    left: 50% !important; /* Override any other positioning to center it */
+    width: auto !important; /* Allow width to be determined by content */
+    min-width: 200px; /* Ensure minimum width for small screens */
+}
+
+/* Clone specific styling */
+#spotlight-clone {
+    transform-origin: center;
+    opacity: 0; /* Start invisible */
+    animation: pop-in 0.3s ease-out forwards, super-spotlight-glow 2s ease-in-out infinite;
+}
+
+@keyframes pop-in {
+    0% { 
+        transform: translateX(-50%) scale(0.8); 
+        opacity: 0; 
+    }
+    100% { 
+        transform: translateX(-50%) scale(1); 
+        opacity: 1; 
+    }
+}
+
+@keyframes super-spotlight-glow {
+    0% { 
+        filter: brightness(1.0); 
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); 
+    }
+    50% { 
+        filter: brightness(1.3); 
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.6); 
+    }
+    100% { 
+        filter: brightness(1.1); 
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.4); 
+    }
+}
+
+/* Keep normal brightness for specific elements - keeping for backward compatibility */
+.normal-brightness {
+    filter: brightness(1.0); /* Keep normal brightness */
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Spotlight section effect - keeping for backward compatibility */
+.spotlight-section {
+    filter: brightness(1.1); /* Make 10% brighter */
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    z-index: 5;
+    position: relative;
+    animation: section-pulse-glow 2s ease-in-out;
+}
+
+@keyframes section-pulse-glow {
+    0% { filter: brightness(1); box-shadow: 0 0 0px rgba(255, 255, 255, 0); }
+    50% { filter: brightness(1.2); box-shadow: 0 0 30px rgba(255, 255, 255, 0.5); }
+    100% { filter: brightness(1.1); box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
+}
+
+/* Spotlight text effect - keeping for backward compatibility */
+.spotlight-text {
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+.word-memory-area {
+    width: 100%;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+/* Timer Styles */
+.timer-container {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.circular-timer {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.timer-progress {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    z-index: 1;
+    transform-origin: center;
+    transform: scale(1);
+    transition: background-color 0.3s ease;
+}
+
+.timer-text {
+    position: relative;
+    z-index: 2;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Sound Toggle Button */
+.sound-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    padding: 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.sound-toggle:hover {
+    background-color: rgba(59, 130, 246, 0.5);
+    transform: scale(1.1);
+}
+
+.sound-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Round Display */
+.round-display {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 8px 15px;
+    border-radius: 20px;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    z-index: 10;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Word Display */
+#word-display {
+    width: 100%;
+    min-height: 200px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.word-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.word-item {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #fff;
+    text-align: center;
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: linear-gradient(145deg, #1e3a8a, #2563eb);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    animation: fadeInScale 0.5s ease-out forwards;
+    transform-origin: center;
+    opacity: 0;
+    width: 80%;
+    max-width: 400px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.word-item::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transform: skewX(-20deg);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Input Area */
+#word-input-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+#word-input {
+    width: 80%;
+    max-width: 500px;
+    padding: 15px;
+    border-radius: 5px;
+    border: 2px solid #2563eb;
+    background-color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+#word-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+#word-submit {
+    padding: 12px 25px;
+    background: linear-gradient(45deg, #2563eb, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#word-submit:hover {
+    background: linear-gradient(45deg, #1d4ed8, #2563eb);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+#word-submit:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Game Status */
+.game-status {
+    width: 100%;
+    text-align: center;
+    margin: 20px 0;
+}
+
+#word-memory-status {
+    font-size: 1.3rem;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    background-color: rgba(37, 99, 235, 0.2);
+    padding: 10px 15px;
+    border-radius: 5px;
+}
+
+/* Results Display */
+.word-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding: 20px;
+    background-color: rgba(37, 99, 235, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.word-results h3 {
+    font-size: 1.8rem;
+    color: #fff;
+    margin-bottom: 15px;
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+
+.word-results h4 {
+    font-size: 1.3rem;
+    color: #bfdbfe;
+    margin-bottom: 10px;
+}
+
+.correct-words, .missed-words, .incorrect-words {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.word-correct, .word-missed, .word-incorrect {
+    padding: 8px 15px;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 400px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.word-correct {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid #22c55e;
+}
+
+.word-missed {
+    background-color: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid #f59e0b;
+}
+
+.word-incorrect {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #dc2626;
+}
+
+.results-stats {
+    width: 100%;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.results-stats p {
+    font-size: 1.1rem;
+    color: #fff;
+    margin: 5px 0;
+}
+
+.results-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.next-level-btn, .retry-level-btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.next-level-btn {
+    background: linear-gradient(45deg, #22c55e, #4ade80);
+    color: white;
+}
+
+.next-level-btn:hover {
+    background: linear-gradient(45deg, #16a34a, #22c55e);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.retry-level-btn {
+    background: linear-gradient(45deg, #f59e0b, #fbbf24);
+    color: white;
+}
+
+.retry-level-btn:hover {
+    background: linear-gradient(45deg, #d97706, #f59e0b);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Additional responsive styles for spotlight effect */
+@media screen and (max-width: 768px) {
+    /* Spotlight-specific responsive styles */
+    .super-spotlight {
+        font-size: 1.4rem;
+        padding: 12px 20px;
+    }
+    
+    /* Original responsive styles */
+    .word-item {
+        font-size: 2rem;
+        width: 90%;
+    }
+    
+    #word-input {
+        width: 90%;
+    }
+    
+    .word-correct, .word-missed, .word-incorrect {
+        width: 90%;
+        font-size: 1.1rem;
+    }
+    
+    .results-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .circular-timer {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .timer-text {
+        font-size: 1.5rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    /* Spotlight-specific responsive styles */
+    .super-spotlight {
+        font-size: 1.2rem;
+        padding: 10px 15px;
+        max-width: 85vw;
+    }
+    
+    /* Original responsive styles */
+    #word-memory-container {
+        padding: 15px;
+    }
+    
+    .word-item {
+        font-size: 1.6rem;
+        padding: 8px 15px;
+    }
+    
+    .word-results h3 {
+        font-size: 1.5rem;
+    }
+    
+    .word-results h4 {
+        font-size: 1.2rem;
+    }
+    
+    #word-memory-status {
+        font-size: 1.1rem;
+    }
+    
+    .next-level-btn, .retry-level-btn {
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+    
+    .circular-timer {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .timer-text {
+        font-size: 1.3rem;
+    }
+}
+
+/* Animation for transitions */
+.hidden {
+    display: none !important;
+} 

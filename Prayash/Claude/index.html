@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <link rel="stylesheet" href="memory-game.css">
+    <link rel="stylesheet" href="word-memory.css">
+    <link rel="stylesheet" href="catch-objects.css">
 </head>
 <body>
     <div id="particles-js" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"></div>
@@ -22,6 +24,28 @@
                 <li><a href="#">Profile</a></li>
             </ul>
         </nav>
+        <div class="notification-icon">
+            <i class="fas fa-bell"></i>
+            <span class="notification-count">1</span>
+            <span class="notification-text-alert">See, What's new?</span>
+            <div class="notifications-dropdown">
+                <div class="notification-header">
+                    <h3>Notifications</h3>
+                    <span class="mark-all-read">Mark all as read</span>
+                </div>
+                <div class="notification-list">
+                    <div class="notification-item new">
+                        <div class="notification-icon-small">
+                            <img src="Unity_watermark.jpg" alt="Unity Logo" class="notification-thumbnail">
+                        </div>
+                        <div class="notification-content">
+                            <p class="notification-text"><strong>New Unity Games Coming Soon!</strong> Check out our GTA-3 Game by 'D'Krishna preview.</p>
+                            <span class="notification-time">Just now</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </header>
 
     <main>
@@ -30,6 +54,39 @@
                 <h2>Welcome to GameHub</h2>
                 <p>Play six exciting games all in one place!</p>
                 <button id="start-playing">Start Playing</button>
+            </div>
+        </section>
+
+        <!-- New Unity Games Coming Soon Section -->
+        <section id="upcoming-unity-section" class="upcoming-games">
+            <div class="upcoming-container">
+                <div class="upcoming-content">
+                    <h2>Unity Games are coming soon in our site.</h2>
+                    <p>Hold up and be ready to play our 1st Unity Game, GTA-3 Game by 'D'Krishna.</p>
+                    
+                    <div class="unity-logos">
+                        <div class="unity-logo-container">
+                            <img src="Unity_watermark.jpg" alt="Unity Logo" id="unity-logo" class="unity-logo">
+                            <div class="notification-badge">NEW</div>
+                            <div class="fire-effect"></div>
+                            <div class="fire-particles">
+                                <div class="fire-particle"></div>
+                                <div class="fire-particle"></div>
+                                <div class="fire-particle"></div>
+                                <div class="fire-particle"></div>
+                                <div class="fire-particle"></div>
+                                <div class="fire-particle"></div>
+                                <div class="fire-particle"></div>
+                                <div class="fire-particle"></div>
+                                <div class="fire-particle"></div>
+                            </div>
+                            <div class="flame-text">COMING SOON!</div>
+                        </div>
+                        <div class="gta-logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/en/b/be/GTA3boxcover.jpg" alt="GTA-3 Logo" id="gta-logo">
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -232,6 +289,8 @@
     <script src="main.js"></script>
     <script src="snake-game.js"></script>
     <script src="memory-game.js"></script>
+    <script src="word-memory.js"></script>
+    <script src="catch-objects.js"></script>
 </body>
 </html> 
 
